@@ -9,6 +9,13 @@ Demoed on 10 large-cap tech filers: AAPL, MSFT, GOOGL, AMZN, META, NVDA,
 ORCL, ADBE, CRM, INTC — 4 fiscal years each, output as one Excel workbook
 with a company tab per ticker and a cross-referenced comps summary.
 
+![Example: Apple's spread, FY2022-FY2025](docs/aapl_spread_example.png)
+
+*Margins, Gross Profit, and Net Change in Cash are live Excel formulas
+referencing the raw filing data, not hardcoded numbers. The balance-sheet
+tie-out row is conditionally formatted green/red based on whether Assets
+actually equals Liabilities + Equity for that year.*
+
 ## Why XBRL, not PDF parsing
 
 The obvious approach — regex/PDF-table-extraction over the filing text — is
