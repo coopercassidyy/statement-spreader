@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 import time
+from datetime import datetime, timezone
 
 import requests
 
@@ -62,10 +63,10 @@ def resolve_cik(ticker: str, ticker_map: dict | None = None) -> str:
     return cik
 
 
-def get_company_facts(cik: str) -> dict:
+def get_company_facts(cik: str, refresh: bool = False) -> dict:
     """Return the raw companyfacts JSON for a 10-digit zero-padded CIK, cached locally."""
     cache_name = f"companyfacts_{cik}.json"
-    cached = _read_cache(cache_name)
+    cached = None if refresh else _read_cache(cache_name)
     if cached is not None:
         return cached
 
@@ -73,6 +74,7 @@ def get_company_facts(cik: str) -> dict:
     resp.raise_for_status()
     data = resp.json()
 
+    data["_retrieved_at"] = datetime.now(timezone.utc).isoformat()
     _write_cache(cache_name, data)
     time.sleep(REQUEST_DELAY_SECONDS)
     return data

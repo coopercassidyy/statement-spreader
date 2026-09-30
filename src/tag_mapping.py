@@ -35,14 +35,12 @@ LINE_ITEMS = {
         "CostOfRevenue",
         "CostOfGoodsAndServicesSold",
         "CostOfGoodsSold",
-        "CostOfServices",
     ]),
     "research_and_development": (INCOME_STATEMENT, "Research & Development", [
         "ResearchAndDevelopmentExpense",
     ]),
     "sga": (INCOME_STATEMENT, "SG&A", [
         "SellingGeneralAndAdministrativeExpense",
-        "GeneralAndAdministrativeExpense",
     ]),
     "operating_income": (INCOME_STATEMENT, "Operating Income", [
         "OperatingIncomeLoss",
@@ -65,7 +63,6 @@ LINE_ITEMS = {
     # --- Balance Sheet ---
     "cash": (BALANCE_SHEET, "Cash & Equivalents", [
         "CashAndCashEquivalentsAtCarryingValue",
-        "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
     ]),
     "current_assets": (BALANCE_SHEET, "Total Current Assets", [
         "AssetsCurrent",
@@ -107,7 +104,6 @@ LINE_ITEMS = {
     "depreciation_amortization": (CASH_FLOW, "D&A", [
         "DepreciationDepletionAndAmortization",
         "DepreciationAmortizationAndAccretionNet",
-        "Depreciation",
     ]),
 }
 

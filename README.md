@@ -103,3 +103,31 @@ This is intentionally scoped for a portfolio demo, not a production tool:
 - **Tag mapping curated for large-cap US filers** — extending to small-caps
   or other sectors (e.g. banks, which don't report a traditional COGS line)
   would need additional tag research and possibly sector-specific templates.
+
+## Reliability improvements
+
+Use `python main.py --refresh` to bypass cached company facts. Without this flag,
+previously downloaded data is reused; the Sources sheet records its retrieval time.
+Legacy caches have an unknown retrieval date until refreshed.
+
+The Sources sheet records the selected tag, reporting period, filing date,
+accession, filing URL, and reported or derived status for each financial item.
+Figures are latest-restated historical observations, not point-in-time backtest data.
+
+Calculated metrics show N/A when required inputs are missing. Zero remains a valid
+reported value. Derived liabilities are labeled as not independently verified,
+and their balance check is not counted as a successful independent tie-out.
+The Python and Excel balance checks both use an inclusive $1 million tolerance.
+
+Narrower concepts (G&A alone, services costs alone, depreciation alone) are not
+silently substituted for broader totals. Restricted cash is not substituted for
+unrestricted cash. Missing figures remain blank and require source review.
+The sum of operating, investing, and financing flows is labeled before FX/other
+effects; it is not a complete cash reconciliation.
+
+This workbook is a historical spread, not a forecast or valuation model. Excel
+formulas recalculate when opened in a spreadsheet application; openpyxl does not
+calculate cached formula results. Review selected figures against filings before
+using the output in an investment report. Fiscal-year grouping assumes the year
+of the period end matches the company's fiscal-year label, and units are selected
+from common SEC units; unusual fiscal calendars and non-USD filers need review.

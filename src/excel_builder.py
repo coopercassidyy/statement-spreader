@@ -78,7 +78,7 @@ ROW_LABELS = {
     "total_liabilities": "Total Liabilities", "stockholders_equity": "Stockholders' Equity",
     "balance_check": "Balance Check (Assets − (Liab + Equity))",
     "cfo": "Cash from Operations", "cfi": "Cash from Investing", "cff": "Cash from Financing",
-    "net_change_in_cash": "Net Change in Cash", "capex": "Capital Expenditures",
+    "net_change_in_cash": "Cash Flows Before FX / Other Effects", "capex": "Capital Expenditures",
     "depreciation_amortization": "Depreciation & Amortization",
 }
 
@@ -138,26 +138,26 @@ def _write_company_sheet(wb: Workbook, ticker: str, entity_name: str, spread: di
                 cell = ws.cell(row=row, column=col)
                 cell.font = FORMULA_FONT
                 if spec == "gross_profit":
-                    cell.value = f"={col_letter}4-{col_letter}5"
+                    cell.value = f'=IF(COUNT({col_letter}4,{col_letter}5)=2,{col_letter}4-{col_letter}5,"N/A")'
                     cell.number_format = "#,##0"
                 elif spec == "gross_margin":
-                    cell.value = f"=IFERROR({col_letter}6/{col_letter}4,\"\")"
+                    cell.value = f'=IF(COUNT({col_letter}6,{col_letter}4)=2,IFERROR({col_letter}6/{col_letter}4,"N/A"),"N/A")'
                     cell.number_format = PCT_FMT
                 elif spec == "operating_margin":
-                    cell.value = f"=IFERROR({col_letter}10/{col_letter}4,\"\")"
+                    cell.value = f'=IF(COUNT({col_letter}10,{col_letter}4)=2,IFERROR({col_letter}10/{col_letter}4,"N/A"),"N/A")'
                     cell.number_format = PCT_FMT
                 elif spec == "net_margin":
-                    cell.value = f"=IFERROR({col_letter}14/{col_letter}4,\"\")"
+                    cell.value = f'=IF(COUNT({col_letter}14,{col_letter}4)=2,IFERROR({col_letter}14/{col_letter}4,"N/A"),"N/A")'
                     cell.number_format = PCT_FMT
                 elif spec == "net_change_in_cash":
-                    cell.value = f"={col_letter}30+{col_letter}31+{col_letter}32"
+                    cell.value = f'=IF(COUNT({col_letter}30:{col_letter}32)=3,SUM({col_letter}30:{col_letter}32),"N/A")'
                     cell.number_format = "#,##0"
                 elif spec == "balance_check":
                     formula = (
                         f'=IF(OR({col_letter}22="",{col_letter}25="",{col_letter}26=""),"n/a",'
-                        f'IF(ABS({col_letter}22-({col_letter}25+{col_letter}26))<1,"OK","MISMATCH"))'
+                        f'IF(ABS({col_letter}22-({col_letter}25+{col_letter}26))<=1,"OK","MISMATCH"))'
                     )
-                    cell.value = formula
+                    cell.value = "Derived—not independently verified" if year_data.get("total_liabilities", {}).get("derived") else formula
                     check = validation.get(fy, {}).get("balance_sheet_ties", {})
                     if check.get("ok") is True:
                         cell.fill = OK_FILL
@@ -196,17 +196,17 @@ def _write_comps_sheet(wb: Workbook, company_years: dict):
         ws.cell(row=r, column=1, value=ticker)
         ws.cell(row=r, column=2, value=entity_name)
         ws.cell(row=r, column=3, value=f"='{sheet}'!{latest_col}1")
-        ws.cell(row=r, column=4, value=f"='{sheet}'!{latest_col}4").number_format = "#,##0"
+        ws.cell(row=r, column=4, value=f'=IF(ISNUMBER(\'{sheet}\'!{latest_col}4),\'{sheet}\'!{latest_col}4,"N/A")').number_format = "#,##0"
         if prior_col:
             ws.cell(row=r, column=5,
-                     value=f"=IFERROR(('{sheet}'!{latest_col}4-'{sheet}'!{prior_col}4)/'{sheet}'!{prior_col}4,\"\")"
+                     value=f'=IF(COUNT(\'{sheet}\'!{latest_col}4,\'{sheet}\'!{prior_col}4)=2,IFERROR((\'{sheet}\'!{latest_col}4-\'{sheet}\'!{prior_col}4)/\'{sheet}\'!{prior_col}4,"N/A"),"N/A")'
                      ).number_format = PCT_FMT
         ws.cell(row=r, column=6, value=f"='{sheet}'!{latest_col}7").number_format = PCT_FMT
         ws.cell(row=r, column=7, value=f"='{sheet}'!{latest_col}11").number_format = PCT_FMT
         ws.cell(row=r, column=8, value=f"='{sheet}'!{latest_col}15").number_format = PCT_FMT
-        ws.cell(row=r, column=9, value=f"='{sheet}'!{latest_col}22").number_format = "#,##0"
+        ws.cell(row=r, column=9, value=f'=IF(ISNUMBER(\'{sheet}\'!{latest_col}22),\'{sheet}\'!{latest_col}22,"N/A")').number_format = "#,##0"
         ws.cell(row=r, column=10,
-                 value=f"=IFERROR('{sheet}'!{latest_col}14/'{sheet}'!{latest_col}26,\"\")"
+                 value=f'=IF(COUNT(\'{sheet}\'!{latest_col}14,\'{sheet}\'!{latest_col}26)=2,IFERROR(\'{sheet}\'!{latest_col}14/\'{sheet}\'!{latest_col}26,"N/A"),"N/A")'
                  ).number_format = PCT_FMT
 
     ws.column_dimensions["A"].width = 10
@@ -225,5 +225,14 @@ def build_workbook(companies: dict) -> Workbook:
         years = _write_company_sheet(wb, ticker, data["entity_name"], data["spread"], data["validation"])
         company_years[ticker] = {"years": years, "entity_name": data["entity_name"]}
 
+    sources = wb.create_sheet("Sources")
+    sources.append(["Ticker", "FY", "Line item", "Value (reported units)", "Tag", "Derived", "Period start", "Period end", "Filed", "Accession", "Filing URL", "Retrieved (UTC)"])
+    for ticker, data in companies.items():
+        for fy, items in data["spread"].items():
+            for key, item in items.items():
+                src = item.get("source", {})
+                sources.append([ticker, fy, key, item.get("value"), item.get("tag"), item.get("derived", False), src.get("start"), src.get("end"), src.get("filed"), src.get("accn"), src.get("url"), data.get("retrieved_at")])
+    sources.freeze_panes = "A2"
+    sources.auto_filter.ref = sources.dimensions
     _write_comps_sheet(wb, company_years)
     return wb

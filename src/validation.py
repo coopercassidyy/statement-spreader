@@ -20,6 +20,9 @@ def check_balance_sheet_ties(year_data: dict) -> dict:
     if assets is None or liabilities is None or equity is None:
         return {"ok": None, "diff": None}
 
+    if year_data["total_liabilities"].get("derived"):
+        return {"ok": None, "diff": None, "reason": "Derived—not independently verified"}
+
     diff = assets - (liabilities + equity)
     return {"ok": abs(diff) <= TOLERANCE, "diff": diff}
 

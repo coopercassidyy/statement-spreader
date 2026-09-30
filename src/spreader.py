@@ -75,7 +75,7 @@ def _annual_points(entries: list, period_type: str) -> dict:
         if fy not in best_by_fy or e["end"] > best_by_fy[fy]["end"]:
             best_by_fy[fy] = e
 
-    return {fy: e["val"] for fy, e in best_by_fy.items()}
+    return best_by_fy
 
 
 def get_available_fiscal_years(company_facts: dict, num_years: int) -> list:
@@ -102,8 +102,12 @@ def spread_company(company_facts: dict, num_years: int) -> dict:
         year_data = {}
         for key, (statement, _label, candidates) in LINE_ITEMS.items():
             period_type = STATEMENT_PERIOD_TYPE[statement]
-            value, tag = _resolve_line_item(company_facts, candidates, fy, period_type)
-            year_data[key] = {"value": value, "tag": tag, "derived": False}
+            entry, tag = _resolve_line_item(company_facts, candidates, fy, period_type)
+            source = {k: entry.get(k) for k in ("start", "end", "filed", "accn")} if entry else {}
+            cik = company_facts.get("cik")
+            if cik and source.get("accn"):
+                source["url"] = f"https://www.sec.gov/Archives/edgar/data/{int(cik)}/{source['accn'].replace('-', '')}/{source['accn']}-index.html"
+            year_data[key] = {"value": entry["val"] if entry else None, "tag": tag, "derived": False, "source": source}
         result[fy] = year_data
 
     for fy, year_data in result.items():

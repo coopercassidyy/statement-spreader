@@ -28,7 +28,11 @@ def parse_args():
                          help=f"Number of fiscal years to spread (default: {DEFAULT_NUM_YEARS})")
     parser.add_argument("--out", default=DEFAULT_OUTPUT_PATH,
                          help=f"Output .xlsx path (default: {DEFAULT_OUTPUT_PATH})")
-    return parser.parse_args()
+    parser.add_argument("--refresh", action="store_true", help="Fetch fresh company data instead of using cache")
+    args = parser.parse_args()
+    if args.years < 1:
+        parser.error("--years must be at least 1")
+    return args
 
 
 def main():
@@ -43,7 +47,7 @@ def main():
         print(f"Processing {ticker}...")
         try:
             cik = resolve_cik(ticker, ticker_map)
-            facts = get_company_facts(cik)
+            facts = get_company_facts(cik, refresh=args.refresh)
         except Exception as e:
             print(f"  SKIPPED: could not fetch data for {ticker}: {e}", file=sys.stderr)
             continue
@@ -56,6 +60,7 @@ def main():
         validation = validate_spread(spread)
         companies[ticker] = {
             "entity_name": facts.get("entityName", ticker),
+            "retrieved_at": facts.get("_retrieved_at", "Unknown (legacy cache; use --refresh)"),
             "spread": spread,
             "validation": validation,
         }
